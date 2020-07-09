@@ -2,6 +2,16 @@ from scipy.spatial import distance
 import cv2
 import os
 
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+    percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                     (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+
+    if iteration == total:
+        print()
+
 def dhash(image, hashSize=8):
     resized_img = cv2.resize(image, (hashSize + 1, hashSize))
     diff = resized_img[:, 1:] > resized_img[:, :-1]
@@ -16,15 +26,31 @@ def dhash_path(path, hashSize=8):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return dhash(image, hashSize=hashSize)
 
+def keep_widest_img(data):
+    max_width = (0 , 0)
+    for item in data:
+        if max_width == (0, 0):
+            max_width = item
+        elif item[0] >= max_width[0]:
+            max_width = item
+            os.remove(item[1])
+        else:
+            os.remove(item[1])
+
+def keep_highest_name(data):
+    pass
+
 if __name__ == '__main__':
-    remove_lower = True
-    directory = ""
+    custom = True
+    directory = "imgs/rosalina"
 
     pic_hashes = {}
 
-    for rel_path in os.listdir(directory):
+    print("Calculating dhashes")
+    printProgressBar(0, len(os.listdir(directory)), prefix='Progress:',
+                     suffix='Complete', length=60)
+    for i, rel_path in enumerate(os.listdir(directory)):
         path = os.getcwd().replace("\\", "/") + "/" + directory + "/" + rel_path
-        print(path)
         image_hash = dhash_path(path)
         if image_hash is None:
             continue
@@ -32,6 +58,8 @@ if __name__ == '__main__':
             pic_hashes[image_hash].append([path])
         else:
             pic_hashes[image_hash] = [[path]]
+        printProgressBar(i + 1, len(os.listdir(directory)), prefix='Progress:',
+                         suffix='Complete', length=60, fill='-')
 
     dupes = []
     for key in pic_hashes.keys():
@@ -41,25 +69,8 @@ if __name__ == '__main__':
     print(dupes)
 
     for dupe_list in dupes:
-        widths = [(cv2.imread(path).shape[1], path) for path in dupe_list]
-        max_width = (0, 0)
-        for item in widths:
-            if max_width is (0, 0):
-                max_width = item
-            elif item[0] > max_width[0]:
-                max_width = item
-            elif item[0] == max_width[0]:
-                if remove_lower:
-                    if int(item[1].split('/')[-1].split(',')[0]) >= int(max_width[1].split('/')[-1].split(',')[0]):
-                        print(max_width[0], item[0], max_width[1] + " is deleted instead of " +item[1])
-                        #os.remove(max_width[1])
-                        max_width = item
-                    else:
-                        print(item[0], max_width[0], item[1] + " is deleted instead of " + max_width[1])
-                        #os.remove(item[1])
-                else:
-                    print(item[0], max_width[0], item[1] + " is deleted instead of " + max_width[1])
-                    #os.remove(item[1])
-            else:
-                print(item[0], max_width[0], item[1] + " is deleted instead of " + max_width[1])
-                #os.remove(item[1])
+        data = [(cv2.imread(path).shape[1], path) for path in dupe_list]
+        if custom:
+            keep_highest_name(data)
+        else:
+            keep_widest_img(data)
