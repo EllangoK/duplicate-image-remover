@@ -27,13 +27,10 @@ def dhash_path(path, hashSize=8):
     return dhash(image, hashSize=hashSize)
 
 def keep_widest_img(data):
-    max_width = (0 , 0)
+    widest_file = max(data, key=lambda i: i[0])
     for item in data:
-        if max_width == (0, 0):
-            max_width = item
-        elif item[0] >= max_width[0]:
-            max_width = item
-            os.remove(item[1])
+        if item[1] == widest_file[1]:
+            continue
         else:
             os.remove(item[1])
 
