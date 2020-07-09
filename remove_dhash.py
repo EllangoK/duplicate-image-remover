@@ -1,4 +1,5 @@
 from scipy.spatial import distance
+import sys
 import cv2
 import os
 
@@ -42,7 +43,6 @@ def keep_highest_name(data):
     for item in data:
         os.remove(item[1])
     cv2.imwrite(highest_filename[1], img)
-    pass
 
 if __name__ == '__main__':
     custom = True
@@ -56,25 +56,38 @@ if __name__ == '__main__':
     for i, rel_path in enumerate(os.listdir(directory)):
         path = os.getcwd().replace("\\", "/") + "/" + directory + "/" + rel_path
         image_hash = dhash_path(path)
+        printProgressBar(i + 1, len(os.listdir(directory)), prefix='Progress:',
+                         suffix='Complete', length=60)
         if image_hash is None:
             continue
         elif image_hash in pic_hashes:
             pic_hashes[image_hash].append([path])
         else:
             pic_hashes[image_hash] = [[path]]
-        printProgressBar(i + 1, len(os.listdir(directory)), prefix='Progress:',
-                         suffix='Complete', length=60)
 
     dupes = []
     for key in pic_hashes.keys():
         if len(pic_hashes[key]) > 1:
             dupes.append([i[0] for i in pic_hashes[key]])
+    
+    if len(dupes) == 0:
+        print("No Duplicates Found")
+        sys.exit()
 
-    print(dupes)
+    count = 0
+    for i in dupes:
+        for j in i:
+            count += 1
+    count -= len(dupes)
 
-    for dupe_list in dupes:
+    print("\nDeleting " + str(count) + " dupes")
+    printProgressBar(0, len(dupes), prefix='Progress:',
+                     suffix='Complete', length=60)
+    for i, dupe_list in enumerate(dupes):
         data = [(cv2.imread(path).shape[1], path) for path in dupe_list]
         if custom:
             keep_highest_name(data)
         else:
             keep_widest_img(data)
+        printProgressBar(i + 1, len(dupes), prefix='Progress:',
+                         suffix='Complete', length=60)
