@@ -38,11 +38,18 @@ def keep_widest_img(data):
             os.remove(item[1])
 
 def keep_highest_name(data):
+    num_filenames = [(item[1].split('/')[-1].split(',')[0], item[1]) for item in data]
+    highest_filename = max(num_filenames, key=lambda i: i[0])
+    widest_file = max(data, key=lambda i: i[0])
+    img = cv2.imread(widest_file[1])
+    for item in data:
+        os.remove(item[1])
+    cv2.imwrite(highest_filename[1], img)
     pass
 
 if __name__ == '__main__':
     custom = True
-    directory = "imgs/rosalina"
+    directory = ""
 
     pic_hashes = {}
 
@@ -59,7 +66,7 @@ if __name__ == '__main__':
         else:
             pic_hashes[image_hash] = [[path]]
         printProgressBar(i + 1, len(os.listdir(directory)), prefix='Progress:',
-                         suffix='Complete', length=60, fill='-')
+                         suffix='Complete', length=60)
 
     dupes = []
     for key in pic_hashes.keys():
