@@ -1,4 +1,8 @@
-from scipy.spatial import distance
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from tkinter.filedialog import askdirectory
+from tkinter import Tk
 import sys
 import cv2
 import os
@@ -37,16 +41,17 @@ def keep_widest_img(data):
 
 def keep_highest_name(data):
     num_filenames = [(item[1].split('/')[-1].split(',')[0], item[1]) for item in data]
-    highest_filename = max(num_filenames, key=lambda i: i[0])
-    widest_file = max(data, key=lambda i: i[0])
+    highest_filename = max(num_filenames, key=lambda i: int(i[0]))
+    widest_file = max(data, key=lambda i: int(i[0]))
     img = cv2.imread(widest_file[1])
     for item in data:
         os.remove(item[1])
-    cv2.imwrite(highest_filename[1], img)
+    a = cv2.imwrite(highest_filename[1], img)
 
 if __name__ == '__main__':
+    Tk().withdraw()
+    directory = askdirectory()
     custom = True
-    directory = ""
 
     pic_hashes = {}
 
@@ -54,7 +59,7 @@ if __name__ == '__main__':
     printProgressBar(0, len(os.listdir(directory)), prefix='Progress:',
                      suffix='Complete', length=60)
     for i, rel_path in enumerate(os.listdir(directory)):
-        path = os.getcwd().replace("\\", "/") + "/" + directory + "/" + rel_path
+        path = directory + "/" + rel_path
         image_hash = dhash_path(path)
         printProgressBar(i + 1, len(os.listdir(directory)), prefix='Progress:',
                          suffix='Complete', length=60)
