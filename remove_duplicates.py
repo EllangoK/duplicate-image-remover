@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from skimage.metrics import structural_similarity as ssim
-from tkinter.filedialog import askdirectory
 from collections import defaultdict
-from tkinter import Tk
 import numpy as np
 import cv2
 import sys
@@ -173,6 +171,8 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     directory = ""
     if len(args) == 0:
+        from tkinter.filedialog import askdirectory
+        from tkinter import Tk
         Tk().withdraw()
         directory = askdirectory()
     else:
