@@ -3,54 +3,59 @@
 
 from skimage.metrics import structural_similarity as ssim
 from tkinter.filedialog import askdirectory
-import matplotlib.pyplot as plt
 from tkinter import Tk
 import numpy as np
 import cv2
+import sys
+import os
 
-def mse(firstImg, secondImg):
-    err = np.sum((firstImg.astype("float") - secondImg.astype("float")) ** 2)
-    err /= float(firstImg.shape[0] * firstImg.shape[1])
+
+def printProgressBar(iteration, total, prefix='Progress:', suffix='Complete', decimals=1, length=100, fill='█', printEnd="\r"):
+    percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                     (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+
+    if iteration == total:
+        print()
+
+def mse(first_img, second_img):
+    err = np.sum((first_img.astype("float") - second_img.astype("float")) ** 2)
+    err /= float(first_img.shape[0] * first_img.shape[1])
     return err
 
-
-def compare_images(imageA, imageB, title):
-	# compute the mean squared error and structural similarity
-	# index for the images
-	m = mse(imageA, imageB)
-	s = ssim(imageA, imageB)
-	# setup the figure
-	fig = plt.figure(title)
-	plt.suptitle("MSE: %.2f, SSIM: %.2f" % (m, s))
-	# show first image
-	ax = fig.add_subplot(1, 2, 1)
-	plt.imshow(imageA, cmap=plt.cm.gray)
-	plt.axis("off")
-	# show the second image
-	ax = fig.add_subplot(1, 2, 2)
-	plt.imshow(imageB, cmap=plt.cm.gray)
-	plt.axis("off")
-	# show the images
-	plt.show()
-
-
 if __name__ == '__main__':
-    Tk().withdraw()
-    directory = askdirectory()
+    args = sys.argv[1:]
+    directory = ""
+    if len(args) == 0:
+        Tk().withdraw()
+        directory = askdirectory()
+    else:
+        directory = os.path.abspath(args[0])
+	
+    image_data = []
 
-	first = cv2.resize(first, (8, 8), interpolation=cv2.INTER_AREA)
-	second = cv2.resize(second, (8, 8), interpolation=cv2.INTER_AREA)
+    print("Loading Image, Grayscaling and Rescaling")
+    printProgressBar(0, len(os.listdir(directory)))
+    for i, rel_path in enumerate(os.listdir(directory)):
+        path = directory + "/" + rel_path
+        img = cv2.imread(path, 0)
+        if img is None:
+            printProgressBar(i + 1, len(os.listdir(directory)))
+            continue
+        image_data.append(
+            [path, cv2.resize(img, (16, 16), interpolation=cv2.INTER_AREA)])
+        printProgressBar(i + 1, len(os.listdir(directory)))
+	
+    dupe_list = []
 
-	fig = plt.figure("Images")
-	images = ("3929,8bs6kf.png", first), ("2459,54rgx8.png", second)
-
-	for (i, (name, image)) in enumerate(images):
-		# show the image
-		ax = fig.add_subplot(1, 3, i + 1)
-		ax.set_title(name)
-		plt.imshow(image, cmap=plt.cm.gray)
-		plt.axis("off")
-
-	plt.show()
-	compare_images(cv2.cvtColor(first, cv2.COLOR_BGR2GRAY),
-				cv2.cvtColor(second, cv2.COLOR_BGR2GRAY), "first vs. second")
+    print("\nCalculating MSE and SSIM")
+    printProgressBar(0, len(image_data))
+    for i, data in enumerate(image_data):
+        mse_ssim = [(item[0], mse(data[1], item[1]), ssim(data[1], item[1]))
+               for item in image_data if data[0] is not item[0]]
+        dupe = [(data[0], item[0]) for item in mse_ssim if item[2] > 0.9 and item[1] < 1]
+        if dupe != []:
+            dupe_list.append(dupe)
+        printProgressBar(i + 1, len(image_data))

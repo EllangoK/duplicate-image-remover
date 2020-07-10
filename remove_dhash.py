@@ -7,7 +7,8 @@ import sys
 import cv2
 import os
 
-def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+
+def printProgressBar(iteration, total, prefix='Progress:', suffix='Complete', decimals=1, length=100, fill='█', printEnd="\r"):
     percent = ("{0:." + str(decimals) + "f}").format(100 *
                                                      (iteration / float(total)))
     filledLength = int(length * iteration // total)
@@ -49,31 +50,34 @@ def keep_highest_name(data):
     a = cv2.imwrite(highest_filename[1], img)
 
 if __name__ == '__main__':
-    Tk().withdraw()
-    directory = askdirectory()
+    args = sys.argv[1:]
+    directory = ""
+    if len(args) == 0:
+        Tk().withdraw()
+        directory = askdirectory()
+    else:
+        directory = os.path.abspath(args[0])
     custom = True
 
     pic_hashes = {}
 
     print("Calculating dhashes")
-    printProgressBar(0, len(os.listdir(directory)), prefix='Progress:',
-                     suffix='Complete', length=60)
+    printProgressBar(0, len(os.listdir(directory)))
     for i, rel_path in enumerate(os.listdir(directory)):
         path = directory + "/" + rel_path
         image_hash = dhash_path(path)
-        printProgressBar(i + 1, len(os.listdir(directory)), prefix='Progress:',
-                         suffix='Complete', length=60)
+        printProgressBar(i + 1, len(os.listdir(directory)))
         if image_hash is None:
             continue
         elif image_hash in pic_hashes:
-            pic_hashes[image_hash].append([path])
+            pic_hashes[image_hash].append(path)
         else:
-            pic_hashes[image_hash] = [[path]]
+            pic_hashes[image_hash] = [path]
 
     dupes = []
     for key in pic_hashes.keys():
         if len(pic_hashes[key]) > 1:
-            dupes.append([i[0] for i in pic_hashes[key]])
+            dupes.append(pic_hashes[key])
     
     if len(dupes) == 0:
         print("No Duplicates Found")
@@ -86,13 +90,11 @@ if __name__ == '__main__':
     count -= len(dupes)
 
     print("\nDeleting " + str(count) + " dupes")
-    printProgressBar(0, len(dupes), prefix='Progress:',
-                     suffix='Complete', length=60)
+    printProgressBar(0, len(dupes))
     for i, dupe_list in enumerate(dupes):
         data = [(cv2.imread(path).shape[1], path) for path in dupe_list]
         if custom:
             keep_highest_name(data)
         else:
             keep_widest_img(data)
-        printProgressBar(i + 1, len(dupes), prefix='Progress:',
-                         suffix='Complete', length=60)
+        printProgressBar(i + 1, len(dupes))
