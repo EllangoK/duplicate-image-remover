@@ -88,22 +88,22 @@ if __name__ == '__main__':
         printProgressBar(i + 1, len(os.listdir(directory)))
 	
     dupe_list = []
-    not_dupe = []
-
     print("\nCalculating MSE and SSIM")
     printProgressBar(0, len(image_data))
     for i, data in enumerate(image_data):
         mse_ssim = [(item[0], mse(data[1], item[1]), ssim(data[1], item[1]))
                for item in image_data if data[0] is not item[0]]
-        dupe = [item[0] for item in mse_ssim if item[2] > 0.85 and item[1] < 1]
+        dupe = [item[0] for item in mse_ssim if item[2] > 0.9 and item[1] < 2.5]
         if dupe != []:
             dupe.insert(0, data[0])
             dupe_list.append(dupe)
-        else:
-            not_dupe.append(data[0])
         printProgressBar(i + 1, len(image_data))
 
     dupe_list = list(merge_common(dupe_list))
+
+    if len(dupe_list) == 0:
+        print("No Duplicates Found")
+        sys.exit()
 
     count = 0
     for i in dupe_list:
