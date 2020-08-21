@@ -3,22 +3,11 @@
 
 from skimage.metrics import structural_similarity as ssim
 from collections import defaultdict
+from tqdm import tqdm
 import numpy as np
 import cv2
 import sys
 import os
-
-
-def printProgressBar(iteration, total, prefix='Progress:', suffix='Complete', decimals=1, length=100, fill='█', printEnd="\r"):
-    percent = ("{0:." + str(decimals) + "f}").format(100 *
-                                                     (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
-
-    if iteration == total:
-        print()
-
 
 def merge_common(lists):
     neigh = defaultdict(set)
@@ -85,17 +74,14 @@ def remove_duplicates(directory, custom=True):
     pic_hashes = {}
 
     print("Calculating dhashes")
-    printProgressBar(0, len(os.listdir(directory)))
-    for i, rel_path in enumerate(os.listdir(directory)):
+    for rel_path in tqdm(os.listdir(directory)):
         path = directory + "/" + rel_path
         img = cv2.imread(path, 0)
         if img is None:
-            printProgressBar(i + 1, len(os.listdir(directory)))
             continue
         image_data[path] = [img, cv2.resize(
             img, (8, 8), interpolation=cv2.INTER_AREA), img.shape[1]]
         image_hash = dhash(img)
-        printProgressBar(i + 1, len(os.listdir(directory)))
         if image_hash is None:
             continue
         elif image_hash in pic_hashes:
@@ -118,9 +104,7 @@ def remove_duplicates(directory, custom=True):
         count -= len(dupe_list)
 
         print("Deleting " + str(count) + " dupes found via Dhash")
-        printProgressBar(0, len(dupe_list))
-        for i, dupes in enumerate(dupe_list):
-            printProgressBar(i + 1, len(dupe_list))
+        for dupes in tqdm(dupe_list):
             data = [(image_data[path][2], path) for path in dupes]
             if custom:
                 keep_highest_name(data)
@@ -134,16 +118,13 @@ def remove_duplicates(directory, custom=True):
 
     dupe_list = []
     print("Calculating MSE and SSIM")
-    printProgressBar(0, len(image_data))
-    for i, data in enumerate(image_data):
+    for data in tqdm(image_data):
         mse_ssim = [(key, mse(image_data[data][1], image_data[key][1]), ssim(image_data[data][1], image_data[key][1]))
-                    for key in image_data if data is not key and image_data[data] is not None]
-        dupe = [item[0]
-                for item in mse_ssim if item[2] > 0.9 and item[1] < 2.5]
+                    for key in image_data if data is not key and image_data[data] is not None and image_data[key] is not None]
+        dupe = [item[0] for item in mse_ssim if item[2] > 0.95 and item[1] < 20]
         if dupe != []:
             dupe.insert(0, data)
             dupe_list.append(dupe)
-        printProgressBar(i + 1, len(image_data))
     dupe_list = list(merge_common(dupe_list))
 
     if len(dupe_list) == 0:
@@ -157,14 +138,12 @@ def remove_duplicates(directory, custom=True):
         count -= len(dupe_list)
 
         print("Deleting " + str(count) + " dupes found via SSIM and MSE")
-        printProgressBar(0, len(dupe_list))
-        for i, dupes in enumerate(dupe_list):
+        for dupes in tqdm(dupe_list):
             data = [(image_data[path][2], path) for path in dupes]
             if custom:
                 keep_highest_name(data)
             else:
                 keep_widest_img(data)
-            printProgressBar(i + 1, len(dupe_list))
 
 
 if __name__ == '__main__':
@@ -177,4 +156,4 @@ if __name__ == '__main__':
         directory = askdirectory()
     else:
         directory = os.path.abspath(args[0])
-    remove_duplicates(directory)
+    remove_duplicates(directory, False)

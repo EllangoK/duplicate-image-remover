@@ -3,20 +3,10 @@
 
 from tkinter.filedialog import askdirectory
 from tkinter import Tk
+from tqdm import tqdm
 import sys
 import cv2
 import os
-
-
-def printProgressBar(iteration, total, prefix='Progress:', suffix='Complete', decimals=1, length=100, fill='█', printEnd="\r"):
-    percent = ("{0:." + str(decimals) + "f}").format(100 *
-                                                     (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
-
-    if iteration == total:
-        print()
 
 def dhash(image, hashSize=8):
     resized_img = cv2.resize(image, (hashSize + 1, hashSize))
@@ -62,11 +52,9 @@ if __name__ == '__main__':
     pic_hashes = {}
 
     print("Calculating dhashes")
-    printProgressBar(0, len(os.listdir(directory)))
-    for i, rel_path in enumerate(os.listdir(directory)):
+    for rel_path in tqdm(os.listdir(directory)):
         path = directory + "/" + rel_path
         image_hash = dhash_path(path)
-        printProgressBar(i + 1, len(os.listdir(directory)))
         if image_hash is None:
             continue
         elif image_hash in pic_hashes:
@@ -90,11 +78,9 @@ if __name__ == '__main__':
     count -= len(dupe_list)
 
     print("\nDeleting " + str(count) + " dupes")
-    printProgressBar(0, len(dupe_list))
-    for i, dupes in enumerate(dupe_list):
+    for dupes in tqdm(dupe_list):
         data = [(cv2.imread(path).shape[1], path) for path in dupes]
         if custom:
             keep_highest_name(data)
         else:
             keep_widest_img(data)
-        printProgressBar(i + 1, len(dupe_list))
